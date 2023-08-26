@@ -58,17 +58,12 @@ def train_step(train_state, x, y):
     trainable_variables, optimizer_variables = _optimizer.stateless_apply(optimizer_variables, grads, trainable_variables)
     return loss_value, (trainable_variables,non_trainable_variables,optimizer_variables)
 
-def visualize_array_sharding(devices,train_data):
+def get_data_sharding(devices,test_shard_data=None):
     data_mesh = Mesh(devices, axis_names=("batch",))  # naming axes of the mesh
     data_sharding = NamedSharding(data_mesh,PartitionSpec("batch",),)  # naming axes of the sharded partition
-    
-    # Display data sharding
-    x, y = next(iter(train_data))
-    print('x:',x.shape)
-    sharded_x = jax.device_put(x.numpy(), data_sharding)
-    sharded_x = jax.numpy.reshape(sharded_x, [sharded_x.shape[0], -1])
-    print('sharded_x:',sharded_x.shape)
-    print("Data sharding...")
-    jax.debug.visualize_array_sharding(sharded_x)
-    print("Data sharding over.")
-
+    if test_shard_data is not None:
+        # Display data sharding
+        print("Data sharding...")
+        jax.debug.visualize_array_sharding(test_shard_data)
+        print("Data sharding over.")
+    return data_sharding
