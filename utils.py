@@ -34,10 +34,12 @@ def get_replicated_train_state(devices,model,optimizer):
 
 _loss_fn=None
 def set_loss_fn(loss_fn):
+    global _loss_fn
     _loss_fn=loss_fn
 
 _model=None
 def set_model(model):
+    global _model
     _model=model
 
 # This is the loss function that will be differentiated.
