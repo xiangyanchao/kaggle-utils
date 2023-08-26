@@ -36,10 +36,14 @@ _loss_fn=None
 def set_loss_fn(loss_fn):
     _loss_fn=loss_fn
 
+_model=None
+def set_model(model):
+    _model=model
+
 # This is the loss function that will be differentiated.
 # Keras provides a pure functional forward pass: model.stateless_call
 def compute_loss(trainable_variables, non_trainable_variables, x, y):
-    y_pred, updated_non_trainable_variables = model.stateless_call(trainable_variables, non_trainable_variables, x)
+    y_pred, updated_non_trainable_variables = _model.stateless_call(trainable_variables, non_trainable_variables, x)
     loss_value = _loss_fn(y, y_pred)
     return loss_value, updated_non_trainable_variables
 
@@ -60,7 +64,11 @@ def visualize_array_sharding(devices,train_data):
     
     # Display data sharding
     x, y = next(iter(train_data))
+    print('x:',x.shape)
     sharded_x = jax.device_put(x.numpy(), data_sharding)
-    print("Data sharding")
-    jax.debug.visualize_array_sharding(jax.numpy.reshape(sharded_x, [sharded_x.shape[-1], -1]))
+    sharded_x = jax.numpy.reshape(sharded_x, [sharded_x.shape[-1], -1])
+    print('sharded_x:',sharded_x.shape)
+    print("Data sharding...")
+    jax.debug.visualize_array_sharding(sharded_x)
+    print("Data sharding over.")
 
