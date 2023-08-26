@@ -17,6 +17,29 @@ def get_devices():
     devices = mesh_utils.create_device_mesh((num_devices,))
     return devices
 
+def get_data_sharding(devices,test_shard_data=None):
+    data_mesh = Mesh(devices, axis_names=("batch",))  # naming axes of the mesh
+    data_sharding = NamedSharding(data_mesh,PartitionSpec("batch",),)  # naming axes of the sharded partition
+    if test_shard_data is not None:
+        # Display data sharding
+        print("Data sharding...")
+        test_shard_data = jax.device_put(test_shard_data, data_sharding)
+        print('test_shard_data:',test_shard_data.shape)
+        jax.debug.visualize_array_sharding(test_shard_data)
+        print("Data sharding over!")
+    return data_sharding
+
+_model=None
+_loss_fn=None
+_optimizer=None
+_compute_gradients=None
+def set_model_suit(model,loss_fn,optimizer):
+    global _model,_loss_fn,_optimizer,_compute_gradients
+    _model=model
+    _loss_fn=loss_fn
+    _optimizer=optimizer
+    _compute_gradients=jax.value_and_grad(compute_loss, has_aux=True)
+
 # Replicate the model and optimizer variable on all devices
 def get_replicated_train_state(devices,model,optimizer):
     # All variables will be replicated on all devices
@@ -31,17 +54,6 @@ def get_replicated_train_state(devices,model,optimizer):
 
     # Combine all state in a tuple
     return (trainable_variables, non_trainable_variables, optimizer_variables)
-
-_model=None
-_loss_fn=None
-_optimizer=None
-_compute_gradients=None
-def set_model_suit(model,loss_fn,optimizer):
-    global _model,_loss_fn,_optimizer,_compute_gradients
-    _model=model
-    _loss_fn=loss_fn
-    _optimizer=optimizer
-    _compute_gradients=jax.value_and_grad(compute_loss, has_aux=True)
 
 # This is the loss function that will be differentiated.
 # Keras provides a pure functional forward pass: model.stateless_call
@@ -58,14 +70,4 @@ def train_step(train_state, x, y):
     trainable_variables, optimizer_variables = _optimizer.stateless_apply(optimizer_variables, grads, trainable_variables)
     return loss_value, (trainable_variables,non_trainable_variables,optimizer_variables)
 
-def get_data_sharding(devices,test_shard_data=None):
-    data_mesh = Mesh(devices, axis_names=("batch",))  # naming axes of the mesh
-    data_sharding = NamedSharding(data_mesh,PartitionSpec("batch",),)  # naming axes of the sharded partition
-    if test_shard_data is not None:
-        # Display data sharding
-        print("Data sharding...")
-        test_shard_data = jax.device_put(test_shard_data, data_sharding)
-        print('test_shard_data:',test_shard_data.shape)
-        jax.debug.visualize_array_sharding(test_shard_data)
-        print("Data sharding over!")
-    return data_sharding
+
