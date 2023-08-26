@@ -38,7 +38,7 @@ def set_loss_fn(loss_fn):
 
 # This is the loss function that will be differentiated.
 # Keras provides a pure functional forward pass: model.stateless_call
-def compute_loss(trainable_variables, non_trainable_variables, x, y, loss_fn):
+def compute_loss(trainable_variables, non_trainable_variables, x, y):
     y_pred, updated_non_trainable_variables = model.stateless_call(trainable_variables, non_trainable_variables, x)
     loss_value = _loss_fn(y, y_pred)
     return loss_value, updated_non_trainable_variables
