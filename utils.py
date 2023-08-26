@@ -54,12 +54,17 @@ def set_compute_gradients():
     global _compute_gradients
     _compute_gradients = jax.value_and_grad(compute_loss, has_aux=True)
 
+_optimizer=None
+def set_optimizer(optimizer):
+    global _optimizer
+    _optimizer = optimizer
+
 # Training step, Keras provides a pure functional optimizer.stateless_apply
 @jax.jit
 def train_step(train_state, x, y):
     trainable_variables, non_trainable_variables, optimizer_variables = train_state
     (loss_value, non_trainable_variables), grads = _compute_gradients(trainable_variables, non_trainable_variables, x, y)
-    trainable_variables, optimizer_variables = optimizer.stateless_apply(optimizer_variables, grads, trainable_variables)
+    trainable_variables, optimizer_variables = _optimizer.stateless_apply(optimizer_variables, grads, trainable_variables)
     return loss_value, (trainable_variables,non_trainable_variables,optimizer_variables)
 
 def visualize_array_sharding(devices,train_data):
