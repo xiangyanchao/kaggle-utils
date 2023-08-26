@@ -32,11 +32,15 @@ def get_replicated_train_state(devices,model,optimizer):
     # Combine all state in a tuple
     return (trainable_variables, non_trainable_variables, optimizer_variables)
 
+_loss_fn=None
+def set_loss_fn(loss_fn):
+    _loss_fn=loss_fn
+
 # This is the loss function that will be differentiated.
 # Keras provides a pure functional forward pass: model.stateless_call
 def compute_loss(trainable_variables, non_trainable_variables, x, y, loss_fn):
     y_pred, updated_non_trainable_variables = model.stateless_call(trainable_variables, non_trainable_variables, x)
-    loss_value = loss_fn(y, y_pred)
+    loss_value = _loss_fn(y, y_pred)
     return loss_value, updated_non_trainable_variables
 
 # Function to compute gradients
@@ -44,9 +48,9 @@ compute_gradients = jax.value_and_grad(compute_loss, has_aux=True)
 
 # Training step, Keras provides a pure functional optimizer.stateless_apply
 @jax.jit
-def train_step(train_state, x, y, loss_fn):
+def train_step(train_state, x, y):
     trainable_variables, non_trainable_variables, optimizer_variables = train_state
-    (loss_value, non_trainable_variables), grads = compute_gradients(trainable_variables, non_trainable_variables, x, y, loss_fn)
+    (loss_value, non_trainable_variables), grads = compute_gradients(trainable_variables, non_trainable_variables, x, y)
     trainable_variables, optimizer_variables = optimizer.stateless_apply(optimizer_variables, grads, trainable_variables)
     return loss_value, (trainable_variables,non_trainable_variables,optimizer_variables)
 
@@ -58,6 +62,5 @@ def visualize_array_sharding(devices,train_data):
     x, y = next(iter(train_data))
     sharded_x = jax.device_put(x.numpy(), data_sharding)
     print("Data sharding")
-    #jax.debug.visualize_array_sharding(jax.numpy.reshape(sharded_x, [-1, 28 * 28]))
-    jax.debug.visualize_array_sharding(sharded_x)
+    jax.debug.visualize_array_sharding(jax.numpy.reshape(sharded_x, [sharded_x.shape[-1], -1]))
 
