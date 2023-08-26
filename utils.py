@@ -65,6 +65,7 @@ def get_data_sharding(devices,test_shard_data=None):
         # Display data sharding
         print("Data sharding...")
         test_shard_data = jax.device_put(test_shard_data, data_sharding)
+        print('test_shard_data:',test_shard_data.shape)
         jax.debug.visualize_array_sharding(test_shard_data)
         print("Data sharding over!")
     return data_sharding
