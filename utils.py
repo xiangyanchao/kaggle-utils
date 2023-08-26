@@ -32,15 +32,16 @@ def get_replicated_train_state(devices,model,optimizer):
     # Combine all state in a tuple
     return (trainable_variables, non_trainable_variables, optimizer_variables)
 
-_loss_fn=None
-def set_loss_fn(loss_fn):
-    global _loss_fn
-    _loss_fn=loss_fn
-
 _model=None
-def set_model(model):
-    global _model
+_loss_fn=None
+_optimizer=None
+_compute_gradients=None
+def set_model_suit(model,loss_fn,optimizer):
+    global _model,_loss_fn,_optimizer,_compute_gradients
     _model=model
+    _loss_fn=loss_fn
+    _optimizer=optimizer
+    _compute_gradients=jax.value_and_grad(compute_loss, has_aux=True)
 
 # This is the loss function that will be differentiated.
 # Keras provides a pure functional forward pass: model.stateless_call
@@ -48,16 +49,6 @@ def compute_loss(trainable_variables, non_trainable_variables, x, y):
     y_pred, updated_non_trainable_variables = _model.stateless_call(trainable_variables, non_trainable_variables, x)
     loss_value = _loss_fn(y, y_pred)
     return loss_value, updated_non_trainable_variables
-
-_compute_gradients=None
-def set_compute_gradients():
-    global _compute_gradients
-    _compute_gradients = jax.value_and_grad(compute_loss, has_aux=True)
-
-_optimizer=None
-def set_optimizer(optimizer):
-    global _optimizer
-    _optimizer = optimizer
 
 # Training step, Keras provides a pure functional optimizer.stateless_apply
 @jax.jit
