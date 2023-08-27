@@ -41,19 +41,21 @@ def set_model_suit(model,loss_fn,optimizer):
     _compute_gradients=jax.value_and_grad(compute_loss, has_aux=True)
 
 # Replicate the model and optimizer variable on all devices
-def get_replicated_train_state(devices,model,optimizer):
+def set_replicated_train_state(devices,model,optimizer):
     # All variables will be replicated on all devices
     var_mesh = Mesh(devices, axis_names=("_"))
     # In NamedSharding, axes not mentioned are replicated (all axes here)
     var_replication = NamedSharding(var_mesh, PartitionSpec())
 
     # Apply the distribution settings to the model variables
-    trainable_variables     = jax.device_put(model.trainable_variables,     var_replication)
-    non_trainable_variables = jax.device_put(model.non_trainable_variables, var_replication)
-    optimizer_variables     = jax.device_put(optimizer.variables,           var_replication)
+    model.trainable_variables     = jax.device_put(model.trainable_variables,     var_replication)
+    model.non_trainable_variables = jax.device_put(model.non_trainable_variables, var_replication)
+    model.optimizer_variables     = jax.device_put(optimizer.variables,           var_replication)
 
     # Combine all state in a tuple
-    return (trainable_variables, non_trainable_variables, optimizer_variables)
+    return (model.trainable_variables, 
+            model.non_trainable_variables, 
+            model.optimizer_variables)
 
 # This is the loss function that will be differentiated.
 # Keras provides a pure functional forward pass: model.stateless_call
