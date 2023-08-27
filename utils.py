@@ -51,9 +51,10 @@ def set_replicated_train_state(devices,model,optimizer):
     trainable_variables     = jax.device_put(model.trainable_variables,     var_replication)
     non_trainable_variables = jax.device_put(model.non_trainable_variables, var_replication)
     optimizer_variables     = jax.device_put(optimizer.variables,           var_replication)
+    metrics_variables     = jax.device_put(optimizer.metrics_variables,     var_replication)
 
     # Combine all state in a tuple
-    return (trainable_variables, non_trainable_variables, optimizer_variables)
+    return (trainable_variables, non_trainable_variables, optimizer_variables, metrics_variables)
 
 # This is the loss function that will be differentiated.
 # Keras provides a pure functional forward pass: model.stateless_call
